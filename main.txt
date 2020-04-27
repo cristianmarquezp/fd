@@ -1,0 +1,214 @@
+/*
+ * File:   main.c
+ * Author: MARQUEZ
+ *
+ * Created on 15 de enero de 2018, 13:26
+*
+ */
+#include "configuracion.h"
+#include "M_EUSART.h"
+#include "pic18f26k22.h"
+#include "Geofence_v3.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+
+unsigned long inputData = 0;
+signed long example = 5555555;
+/*********************C O O R D E N A D A S*************************/
+
+  unsigned int numver1,numver2,inout;
+float numverf1,numverf2;
+
+
+/***************F I N******C O O R D E N A D A S******************/
+
+
+unsigned int tot_float_entero  ;
+
+signed long coordenada_latitud_entera,coordenada_longitud_entera;
+
+
+unsigned int contador = 0;
+unsigned int pulsos = 0;
+unsigned int a,b;
+unsigned char lsb = 0x00;
+unsigned char lsb2 = 0x00;
+unsigned char lsb3 = 0x00;
+unsigned char lsb4 = 0x00;
+unsigned int veces = 0;
+unsigned char vec_bits[5];
+unsigned char comparar = 0;
+
+unsigned int x,y, var;
+volatile unsigned int k;
+unsigned int buffer[24];
+unsigned char bufferc[50];
+unsigned char nmea[];
+unsigned int nmeaCounter = 0;
+unsigned char primerter,segundoter,tercerter;
+ unsigned int degcoor, pri, seg, ter, cuar, quin, sex, sie;
+unsigned int l_pri, l_seg, l_ter, l_cuar, l_quin, l_sex,l_sie,l_och,l_nue;
+ unsigned long tot,prueba,pruebac;
+ unsigned long l_tot;
+
+unsigned int mil, resto, cen, fin,pop,l_mil,l_resto,l_cen,l_fin;
+unsigned char transurt[8] = {'R','D','O','P','U','0','0','0'};
+char make_phcall[16] = "ATD3192970038;\r\n";
+
+unsigned char prep_msm[] = "AT+CMGF=1\r\n";
+unsigned char char_mode[]="AT+CSCS=\"GSM\"";
+unsigned char send_message[]="AT+CMGS=\"3192970038\"\r\n";
+//unsigned char send_message[]="AT+CMGS=\"3204149042\"\r\n";
+unsigned char mesg[]="Battery";
+unsigned char terminator[]="\x1a";
+
+unsigned int adc_result,off;
+
+unsigned int at_rq,times_out;
+
+unsigned char csq[20];
+unsigned int counter_csq;
+unsigned int signal=1;
+unsigned char csq2[20];
+unsigned int counter_csq2;
+unsigned int longitudReg;
+unsigned long off_gsmi,cut;
+
+
+
+void __interrupt(high_priority) myIsr(void)
+{
+ //      PORTBbits.RB4 = 1;
+   //     PORTBbits.RB4 = 0;
+     //    __delay_ms(1100);
+
+            
+       
+   
+
+    if(RC2IF == 1){
+        //CREN2=0;
+        nmea[1] =RCREG2;
+
+        RC2IF = 0;
+
+       // if(nmea[1] == 0x01 ||nmea[1] == 2 ){    //End Stop lift
+           /*UART_Write1('a');
+           PORTBbits.RB3 = 0;
+           __delay_ms(700);
+           PORTBbits.RB3 = 1;
+            __delay_ms(700);
+            PORTBbits.RB3 = 0;
+           __delay_ms(700);
+           PORTBbits.RB3 = 1;*/
+        UART_Write1(RCREG2);
+        //TXREG1 = RCREG2;
+
+            
+       // }
+         //   CREN2=1;
+
+    }
+
+
+    if(RC1IF == 1){
+         nmea[1] =RCREG1;
+        RC1IF = 0;
+        NOP();
+        if(nmea[1] == 'k'){
+               PORTBbits.RB3 = 1;
+             UART_Write2('K');
+        }
+       
+
+    }
+
+
+ }
+
+int main() {
+    OSCCONbits.IRCF = 6;                                                        /////////////PARA OSCILADOR INTERNO, TAMBIEN VER LOS BITS DE CONFIGURACION
+     ANSELCbits.ANSC7 = 0; //0 = Digital input buffer enabled
+     ANSELCbits.ANSC6 = 0; //0 = Digital input buffer enabled
+    ANSELBbits.ANSB3 = 0;
+     ANSELBbits.ANSB2 = 0;
+     ANSELBbits.ANSB1 = 0;
+     ANSELBbits.ANSB0 = 0;
+   ANSELBbits.ANSB4 = 0;
+//     ANSELBbits.ANSB5 = 0;
+     
+
+     ANSELCbits.ANSC2 = 0;
+     ANSELCbits.ANSC3 = 0;
+
+        PORTBbits.RB3 = 0;
+        PORTBbits.RB4 = 0;
+
+     configuracion();
+      interrup_rx();
+     TRISBbits.RB0 = 0;
+     TRISBbits.RB1 = 0;
+     TRISBbits.RB2 = 0;
+     TRISBbits.RB3 = 0;
+     TRISBbits.RB4 = 0;
+     TRISCbits.RC2 = 0;
+     TRISCbits.RC1 = 0;
+     TRISCbits.RC0 = 0;
+     PORTCbits.RC2 = 0;
+     PORTCbits.RC1 = 1;
+     PORTCbits.RC0 = 1;
+
+
+    // PORTCbits.RC1 = 0;
+     //PORTCbits.RC2 = 0;
+//     TRISCbits.RC5 = 0;
+
+     //PINES PARA INTERRUPCION
+//     TRISBbits.RB4 = 0;
+//     TRISBbits.RB5 = 0;
+//     TRISBbits.RB6 = 0;
+//     TRISBbits.RB7 = 0;
+
+
+     //******ADC CONFIGURATION******
+//     port_conf();
+//     chann_sel();
+//     ref_volt();
+//     clk_sel();
+//     res_form();
+//     adc_init();
+     //*****END ADC CONFIGURATION
+
+
+
+
+
+    while(1)
+    {
+ 
+        /*PORTBbits.RB3 = 0;
+         __delay_ms(1000);
+          PORTBbits.RB3 = 1;
+         
+        __delay_ms(1100);*/
+      // UART_Write2('b');
+
+        /* UART_Write2(lsb);
+         UART_Write2(lsb2);
+         UART_Write2(lsb3);
+         UART_Write2(lsb4);
+
+         UART_Write2('-');*/
+
+     
+
+         
+
+
+
+    }
+
+}
+
